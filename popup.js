@@ -3,11 +3,11 @@
  });
 */
  document.getElementById('btn').onclick = function(){
-   var timer = (parseInt(document.getElementById('interval_mins').value) * 60) + parseInt(document.getElementById('interval_secs').value)
+   var timer = ((parseInt(document.getElementById('interval_mins').value) * 60) + parseInt(document.getElementById('interval_secs').value))*1000
  //  port.postMessage(timer);
 
    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {tick: timer});
+            chrome.tabs.sendMessage(tabs[0].id, {tick: timer, start:true});
             //alert('msg sent from back.js');
          });
    //alert('msg sent');

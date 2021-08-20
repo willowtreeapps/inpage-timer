@@ -3,6 +3,8 @@ var clock = 0;
 //alert('content.js is running');
 var timerObj = undefined;
 var status="stopped"; //stopped, running, paused
+var prevTime = -1;
+var interval = 500;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if(request.reset==true){
@@ -12,16 +14,21 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         clock=0;
         timer_value=-1;
         status="stopped";
+        prevTime = -1;
+        timerObj = undefined;
     }
     else if(request.pause==true && status=="running"){
         clearInterval(timerObj);
         status="paused";
+        prevTime = -1;
     }
-    else if(request.resume==true && status=="paused"){
-        timerObj = setInterval(tick,1000);
+    //lets just allow for start to resume as well since people confuse it enough
+    else if((request.resume==true || request.start==true) && status=="paused"){
+        timerObj = setInterval(tick,interval);
         status="running";
+        prevTime = new Date().getTime();
     }
-    else if(request.tick != undefined) {
+    else if(request.tick != undefined && !timerObj) {
         timer_value = request.tick;
         //document.getElementById('timer_container').innerHTML = timer_value+'seconds';
         //alert(timer_value);
@@ -33,7 +40,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         status="running";
         //.appendChild(container);
         tick();
-        timerObj = setInterval(tick, 1000);
+        timerObj = setInterval(tick, interval);
         addListeners();
         //alert('element added');
     }
@@ -47,9 +54,18 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 */
 function tick(){
     if(clock<=timer_value){
-        time_to_display = secondsToHms( timer_value - clock );
+        var curTime = new Date().getTime();
+        //If we haven't set the previous time then ignore this tick
+        if(prevTime == -1) {
+          prevTime = curTime-500;
+        }
+        var diff = curTime-prevTime;
+        clock = clock + diff;
+        prevTime = curTime;
+        var newTime = Math.ceil((timer_value - clock)/1000);
+        if(newTime < 0) newTime = 0;
+        time_to_display = secondsToHms(newTime);
         document.getElementById('timer_container').innerText= time_to_display;
-        clock = clock +1;
     }
     else{
         document.getElementById('timer_container').innerText= "TIME UP!";
